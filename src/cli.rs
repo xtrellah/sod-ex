@@ -14,12 +14,15 @@ pub struct Cli {
 enum Commands {
     #[command(about = "Lists aliased scripts")]
     List {},
+    #[command(about = "Add entry")]
+    Add { name: String, path: String },
 }
 
 impl Commands {
     fn as_str(&self) -> &str {
         match self {
             Commands::List {} => "list",
+            Commands::Add { name, path } => "add",
         }
     }
 }
@@ -32,6 +35,9 @@ pub fn cli() {
     match cli.command {
         Commands::List {} => {
             commands::list::list();
+        }
+        Commands::Add { name, path } => {
+            commands::add::add(&name, &path);
         }
     }
 }

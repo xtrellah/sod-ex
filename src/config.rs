@@ -47,3 +47,21 @@ pub fn load_config() -> Config {
 
     toml::from_str(&content).expect("Failed to parse config")
 }
+
+pub fn add_entry(name: &str, script_path: &str) -> Config {
+    let path = get_config_path();
+
+    let mut config: Config = load_config();
+
+    // add entry
+    config
+        .commands
+        .insert(name.to_string(), script_path.to_string());
+
+    // write
+    let updated = toml::to_string_pretty(&config).expect("Failed to serialize config");
+
+    fs::write(&path, updated).expect("Failed to write config file");
+
+    config
+}
