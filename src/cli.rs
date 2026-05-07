@@ -1,7 +1,6 @@
 use crate::commands;
 use crate::config;
 use crate::executor;
-// use clap::Parser;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -16,6 +15,8 @@ enum Commands {
     List {},
     #[command(about = "Add entry")]
     Add { name: String, path: String },
+    #[command(external_subcommand)]
+    External(Vec<String>),
 }
 
 impl Commands {
@@ -23,14 +24,13 @@ impl Commands {
         match self {
             Commands::List {} => "list",
             Commands::Add { name, path } => "add",
+            Commands::External(args) => args.first().map(|s| s.as_str()).unwrap_or(""),
         }
     }
 }
 
 pub fn cli() {
     let cli: Cli = Cli::parse();
-
-    load_commands(&cli);
 
     match cli.command {
         Commands::List {} => {
@@ -39,20 +39,18 @@ pub fn cli() {
         Commands::Add { name, path } => {
             commands::add::add(&name, &path);
         }
-    }
-}
-
-fn load_commands(cli: &Cli) {
-    let config = config::load_config();
-
-    match config.commands.get(cli.command.as_str()) {
-        Some(path) => {
-            if let Err(e) = executor::run_script(path) {
-                eprintln!("Execution failed: {}", e);
+        Commands::External(args) => {
+            if let Some(cmd_name) = args.first() {
+                let config = config::load_config();
+                if let Some(path) = config.commands.get(cmd_name) {
+                    let script_args = &args[1..];
+                    if let Err(e) = executor::run_script_with_args(path, script_args) {
+                        eprintln!("Execution failed: {}", e);
+                    }
+                } else {
+                    eprintln!("Command '{}' not found", cmd_name);
+                }
             }
-        }
-        None => {
-            eprintln!("Command not found");
         }
     }
 }
